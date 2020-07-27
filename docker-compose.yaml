@@ -98,7 +98,7 @@ services:
         curl -k -SL "http://dev.mysql.com/get/Downloads/Connector-J/mysql-connector-java-5.1.37.tar.gz" | tar -xzf -
         #
         echo "Launching Kafka Connect worker"
-        /etc/confluent/docker/run & 
+        /etc/confluent/docker/run &
         #
         sleep infinity
 
@@ -163,11 +163,15 @@ services:
         cd /usr/share/java/monitoring-interceptors
         curl -k -L https://packages.confluent.io/maven/io/confluent/monitoring-interceptors/5.5.0/monitoring-interceptors-5.5.0.jar -o monitoring-interceptors-5.5.0.jar
         echo "Launching ksqlDB server"
-        /usr/bin/docker/run & 
+        /usr/bin/docker/run &
         #
         sleep infinity
-  
+
   ksqldb-cli:
+    # *-----------------------------*
+    # To connect to the ksqldb:
+    #   docker exec -it ksqldb-cli ksql http://ksqldb-server:8088
+    # *-----------------------------*
     image: confluentinc/ksqldb-cli:${version_ksqldb}
     container_name: ksqldb-cli
     depends_on:
@@ -178,6 +182,9 @@ services:
     tty: true
 
   workshop-docs:
+    # *-----------------------------*
+    # To connect to the documentation:
+    #   http://localhost:80
     image: nginx:latest
     container_name: workshop-docs-webserver
     ports:
@@ -192,16 +199,16 @@ services:
       - zookeeper
       - broker
     command: "bash -c 'echo Waiting for Kafka to be ready... && \
-                           cub kafka-ready -b broker:29092 1 300 && \
-                           echo Creating topics... && \
-                           kafka-topics --bootstrap-server broker:29092 --create --topic dc --replication-factor 1 --partitions 1 && \
-                           kafka-topics --bootstrap-server broker:29092 --create --topic dc_customers --replication-factor 1 --partitions 1 && \
-                           kafka-topics --bootstrap-server broker:29092 --create --topic dc_products --replication-factor 1 --partitions 1 && \
-                           kafka-topics --bootstrap-server broker:29092 --create --topic dc_purchase_orders --replication-factor 1 --partitions 1 && \
-                           kafka-topics --bootstrap-server broker:29092 --create --topic dc_purchase_order_details --replication-factor 1 --partitions 1 && \
-                           kafka-topics --bootstrap-server broker:29092 --create --topic dc_sales_orders --replication-factor 1 --partitions 1 && \
-                           kafka-topics --bootstrap-server broker:29092 --create --topic dc_sales_order_details --replication-factor 1 --partitions 1 && \
-                           kafka-topics --bootstrap-server broker:29092 --create --topic dc_suppliers --replication-factor 1 --partitions 1'"
+                cub kafka-ready -b broker:29092 1 300 && \
+                echo Creating topics... && \
+                kafka-topics --bootstrap-server broker:29092 --create --topic dc --replication-factor 1 --partitions 1 && \
+                kafka-topics --bootstrap-server broker:29092 --create --topic dc_customers --replication-factor 1 --partitions 1 && \
+                kafka-topics --bootstrap-server broker:29092 --create --topic dc_products --replication-factor 1 --partitions 1 && \
+                kafka-topics --bootstrap-server broker:29092 --create --topic dc_purchase_orders --replication-factor 1 --partitions 1 && \
+                kafka-topics --bootstrap-server broker:29092 --create --topic dc_purchase_order_details --replication-factor 1 --partitions 1 && \
+                kafka-topics --bootstrap-server broker:29092 --create --topic dc_sales_orders --replication-factor 1 --partitions 1 && \
+                kafka-topics --bootstrap-server broker:29092 --create --topic dc_sales_order_details --replication-factor 1 --partitions 1 && \
+                kafka-topics --bootstrap-server broker:29092 --create --topic dc_suppliers --replication-factor 1 --partitions 1'"
 
   mysql:
     # *-----------------------------*

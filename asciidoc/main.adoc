@@ -235,37 +235,32 @@ To create the Debezium MySQL Source connector instance run the following command
 ====
 [source,subs="attributes"]
 ----
-curl -i -X POST -H "Accept:application/json" \
-  -H  "Content-Type:application/json" http://localhost:18083/connectors/ \
-  -d '{
-    "name": "mysql-source-connector",
-    "config": {
-          "connector.class": "io.debezium.connector.mysql.MySqlConnector",
-          "database.hostname": "mysql",
-          "database.port": "3306",
-          "database.user": "mysqluser",
-          "database.password": "mysqlpw",
-          "database.server.id": "12345",
-          "database.server.name": "{dc}",
-          "database.whitelist": "orders",
-          "table.blacklist": "orders.{dc}_out_of_stock_events",
-          "database.history.kafka.bootstrap.servers": "broker:29092",
-          "database.history.kafka.topic": "debezium_dbhistory" ,
-          "include.schema.changes": "false",
-          "snapshot.mode": "when_needed",
-          "transforms": "unwrap,sourcedc,TopicRename,extractKey",
-          "transforms.unwrap.type": "io.debezium.transforms.UnwrapFromEnvelope",
-          "transforms.sourcedc.type":"org.apache.kafka.connect.transforms.InsertField$Value",
-          "transforms.sourcedc.static.field":"sourcedc",
-          "transforms.sourcedc.static.value":"{dc}",
-          "transforms.TopicRename.type": "org.apache.kafka.connect.transforms.RegexRouter",
-          "transforms.TopicRename.regex": "(.*)\\.(.*)\\.(.*)",
-          "transforms.TopicRename.replacement": "$1_$3",
-          "transforms.extractKey.type": "org.apache.kafka.connect.transforms.ExtractField$Key",
-          "transforms.extractKey.field": "id",
-          "key.converter": "org.apache.kafka.connect.converters.IntegerConverter"
-      }
-  }'
+CREATE SOURCE CONNECTOR mysql_source_connector WITH (
+'connector.class'='io.debezium.connector.mysql.MySqlConnector',
+'database.hostname'='mysql',
+'database.port'='3306',
+'database.user'='mysqluser',
+'database.password'='mysqlpw',
+'database.server.id'='12345',
+'database.server.name'='{dc}',
+'database.whitelist'='orders',
+'table.blacklist'='orders.{dc}_out_of_stock_events',
+'database.history.kafka.bootstrap.servers'='broker:29092',
+'database.history.kafka.topic'='debezium_dbhistory',
+'include.schema.changes'='false',
+'snapshot.mode'='when_needed',
+'transforms'='unwrap,sourcedc,TopicRename,extractKey',
+'transforms.unwrap.type'='io.debezium.transforms.UnwrapFromEnvelope',
+'transforms.sourcedc.type'='org.apache.kafka.connect.transforms.InsertField$Value',
+'transforms.sourcedc.static.field'='sourcedc',
+'transforms.sourcedc.static.value'='{dc}',
+'transforms.TopicRename.type'='org.apache.kafka.connect.transforms.RegexRouter',
+'transforms.TopicRename.regex'='(.*)\\.(.*)\\.(.*)',
+'transforms.TopicRename.replacement'='$1_$3',
+'transforms.extractKey.type'='org.apache.kafka.connect.transforms.ExtractField$Key',
+'transforms.extractKey.field'='id',
+'key.converter'='org.apache.kafka.connect.converters.IntegerConverter'
+);
 ----
 ====
 
@@ -1155,10 +1150,10 @@ What we need to do now is also include all product purchases in the same stream.
 ====
 [source,subs="quotes,attributes"]
 ----
-*INSERT INTO* product_supply_and_demand 
-  *SELECT*  product_id, 
-          product_qty "QUANTITY" 
-  *FROM*    purchases_enriched;
+*INSERT INTO* product_supply_and_demand *SELECT*
+    product_id,
+    product_qty "QUANTITY"
+*FROM* purchases_enriched;
 ----
 ====
 
@@ -1271,7 +1266,7 @@ To run a Pull query we just query the table as normal but drop the `EMIT CHANGES
 
 [source,subs="quotes,attributes"]
 ----
-select product_id, stock_level from current_stock where rowkey=15;
+select product_id, stock_level from current_stock where product_id=15;
 ----
 
 image::./images/ksql_015.png[align="center"]
@@ -1293,7 +1288,7 @@ Exit from the ksqlDB CLI and run the following from the command line.
 
 [source,subs="quotes,attributes"]
 ----
-curl -s -X "POST" "http://localhost:8088/query" -H "Content-Type: application/vnd.ksql.v1+json; charset=utf-8" -d $'{ "ksql": "select product_id, stock_level from current_stock where rowkey=15;" }'| jq .
+curl -s -X "POST" "http://localhost:8088/query" -H "Content-Type: application/vnd.ksql.v1+json; charset=utf-8" -d $'{ "ksql": "select product_id, stock_level from current_stock where product_id=15;" }'| jq .
 ----
 
 As you can see, the ksqlDB Server's REST endpoint will return a JSON message with the `product_id` and its current `stock_level`. This is useful for applications that want access to the current state of the world using a request/response type pattern.
@@ -1350,10 +1345,11 @@ Create the windowed query
 *SET* 'auto.offset.reset'='earliest';
 *CREATE TABLE* product_demand_last_3mins_tbl *WITH* (PARTITIONS = 1, KAFKA_TOPIC = '{dc}_product_demand_last_3mins') 
 *AS SELECT*
-      timestamptostring(windowStart,'HH:mm:ss') "WINDOW_START_TIME"
-    , timestamptostring(windowEnd,'HH:mm:ss') "WINDOW_END_TIME"
-    , product_id
-    , *SUM*(product_qty) "DEMAND_LAST_3MINS"
+    product_id as rowkey,
+    timestamptostring(windowStart,'HH:mm:ss') "WINDOW_START_TIME",
+    timestamptostring(windowEnd,'HH:mm:ss') "WINDOW_END_TIME",
+    product_id,
+    *SUM*(product_qty) "DEMAND_LAST_3MINS"
 *FROM* sales_enriched
 *WINDOW HOPPING* (SIZE 3 MINUTES, ADVANCE BY 1 MINUTE)
 *GROUP BY* product_id *EMIT CHANGES*;
@@ -1434,13 +1430,14 @@ Now that we have the `current_stock` table and `product_demand_last_3mins` strea
 ----
 *SET* 'auto.offset.reset' = 'latest';
 *CREATE STREAM* out_of_stock_events *WITH* (PARTITIONS = 1, KAFKA_TOPIC = '{dc}_out_of_stock_events') 
-*AS SELECT* 
-  cs.product_id "PRODUCT_ID",
-  pd.window_start_time,
-  pd.window_end_time,
-  cs.stock_level,
-  pd.demand_last_3mins,
-  (cs.stock_level * -1) + pd.DEMAND_LAST_3MINS "QUANTITY_TO_PURCHASE"
+*AS SELECT*
+    cs.product_id as rowkey,
+    AS_VALUE(cs.product_id) as PRODUCT_ID,
+    pd.window_start_time,
+    pd.window_end_time,
+    cs.stock_level,
+    pd.demand_last_3mins,
+    (cs.stock_level * -1) + pd.DEMAND_LAST_3MINS "QUANTITY_TO_PURCHASE"
 *FROM* product_demand_last_3mins pd
 *INNER JOIN* current_stock cs *ON* pd.product_id = cs.product_id 
 *WHERE* stock_level <= 0;
@@ -1623,22 +1620,17 @@ In a third terminal session, create the JDBC Sink Connector by running the follo
 ====
 [source,subs="quotes,attributes"]
 ----
-curl -i -X POST -H "Accept:application/json" \
-    -H  "Content-Type:application/json" http://localhost:18083/connectors/ \
-    -d '{
-        "name": "jdbc-mysql-sink",
-        "config": {
-          "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
-          "topics": "{dc}_out_of_stock_events",
-          "connection.url": "jdbc:mysql://mysql:3306/orders",
-          "connection.user": "mysqluser",
-          "connection.password": "mysqlpw",
-          "insert.mode": "INSERT",
-          "batch.size": "3000",
-          "auto.create": "true",
-          "key.converter": "org.apache.kafka.connect.storage.StringConverter"
-       }
-    }'
+CREATE SINK CONNECTOR jdbc_mysql_sink WITH (
+'connector.class'='io.confluent.connect.jdbc.JdbcSinkConnector',
+'topics'='{dc}_out_of_stock_events',
+'connection.url'='jdbc:mysql://mysql:3306/orders',
+'connection.user'='mysqluser',
+'connection.password'='mysqlpw',
+'insert.mode'='INSERT',
+'batch.size'='3000',
+'auto.create'='true',
+'key.converter'='org.apache.kafka.connect.storage.StringConverter'
+);
 ----
 ====
 

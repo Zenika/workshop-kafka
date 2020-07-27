@@ -120,7 +120,8 @@ CREATE STREAM product_supply_and_demand WITH (PARTITIONS=1, KAFKA_TOPIC='dc_prod
     product_qty * -1 "QUANTITY"
 FROM sales_enriched;
 
-INSERT INTO product_supply_and_demand SELECT product_id,
+INSERT INTO product_supply_and_demand SELECT
+    product_id,
     product_qty "QUANTITY"
 FROM purchases_enriched;
 
@@ -136,7 +137,8 @@ CREATE TABLE product_demand_last_3mins_tbl WITH (PARTITIONS = 1, KAFKA_TOPIC = '
 AS SELECT
     timestamptostring(windowStart,'HH:mm:ss') "WINDOW_START_TIME",
     timestamptostring(windowEnd,'HH:mm:ss') "WINDOW_END_TIME",
-    product_id,
+    product_id as rowkey,
+    AS_VALUE(product_id) as product_id,
     SUM(product_qty) "DEMAND_LAST_3MINS"
 FROM sales_enriched
 WINDOW HOPPING (SIZE 3 MINUTES, ADVANCE BY 1 MINUTE)
@@ -147,7 +149,8 @@ CREATE STREAM product_demand_last_3mins WITH (KAFKA_TOPIC='dc_product_demand_las
 SET 'auto.offset.reset' = 'latest';
 CREATE STREAM out_of_stock_events WITH (PARTITIONS = 1, KAFKA_TOPIC = 'dc_out_of_stock_events')
 AS SELECT
-    cs.product_id "PRODUCT_ID",
+    cs.product_id as rowkey,
+    AS_VALUE(cs.product_id) as PRODUCT_ID,
     pd.window_start_time,
     pd.window_end_time,
     cs.stock_level,
