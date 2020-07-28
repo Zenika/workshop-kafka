@@ -2,7 +2,8 @@
 
 Generation de la documentation pour l'image nginx sur votre machine
 ```
-asciidoctor /usr/share/nginx/html/workshop.adoc -o /usr/share/nginx/html/index.html -a stylesheet=stylesheet.css & sed -i -e '/<title>/r clipboard.html' /usr/share/nginx/html/index.html
+asciidoctor asciidoc/workshop.adoc -o asciidoc/index.html -a stylesheet=stylesheet.css
+sed -i -e '/<title>/r asciidoc/clipboard.html' asciidoc/index.html
 ```
 
 Démarrage de l'infrastructure docker
