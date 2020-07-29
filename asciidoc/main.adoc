@@ -1,6 +1,8 @@
 == Lab 1: Connecting to your Workshop Environment
 
-Your environment represents an on-premise data center and consists of a virtual machine hosted in the cloud running several docker containers. In a real world implementation, some of the components would be deployed differently but the logical data flow that we will be working on would remain the same.
+#TODO: revoir le texte et les images#
+
+Your environment represents an on-premise data center and consists of a virtual machine hosted in the cloud running several docker containers. In a real world implementation, some of the components would be deployed differently but the logical data flow that we will be working on would remain the same.[.line-[.line-through]#through#]##
 
 To login to your virtual data center open a terminal session and use the credentials that were assigned to you
 
@@ -20,17 +22,16 @@ You should see something similar to this.
 [source,subs=attributes+]
 ----
 CONTAINER ID        NAMES                     CREATED             STATUS
-ef959fb9e566        db-trans-simulator        3 minutes ago       Up 3 minutes
-979c20e26e60        ksqldb-cli                3 minutes ago       Up 3 minutes
-0d9e1fa2c83f        ksqldb-server-ccloud      3 minutes ago       Up 3 minutes
-4eb1ba589357        control-center            3 minutes ago       Up 3 minutes
-e83088712e60        kafka-connect-ccloud      3 minutes ago       Up 3 minutes
-c2362c0fc8e0        kafka-connect-onprem      3 minutes ago       Up 3 minutes
-82086be4e239        schema-registry           3 minutes ago       Up 3 minutes
-62b037976674        broker                    3 minutes ago       Up 3 minutes
-92c955b221f3        zookeeper                 3 minutes ago       Up 3 minutes
-0794f9008bb6        mysql                     3 minutes ago       Up 3 minutes (healthy)
-31c3c1372aa1        workshop-docs-webserver   3 minutes ago       Up 3 minutes
+7411fae0af98        db-trans-simulator        6 minutes ago       Up 6 minutes
+91b7bbce9075        ksqldb-cli                6 minutes ago       Up 6 minutes
+9a1a8c4aa717        ksqldb-server             6 minutes ago       Up 6 minutes
+acf9e1ba4a88        control-center            6 minutes ago       Up 6 minutes
+04d7691eeee9        kafka-connect             6 minutes ago       Up 6 minutes
+5630a4021627        schema-registry           6 minutes ago       Up 6 minutes
+3b04af171960        broker                    6 minutes ago       Up 6 minutes
+72b2fe66f381        mysql                     6 minutes ago       Up 6 minutes (healthy)
+cb980461bd90        zookeeper                 6 minutes ago       Up 6 minutes
+6e42d5206c65        workshop-docs-webserver   11 minutes ago      Up 11 minutes
 ----
 
 [IMPORTANT]
@@ -47,6 +48,8 @@ image::./images/copypaste.png[]
 
 
 == Lab 2: Getting Started
+
+#TODO: revoir le texte et les images#
 
 The primary data source for this workshop is a MySQL database running in your data center. Connected to this database is a orders application which we will discuss shortly.
 
@@ -74,7 +77,7 @@ docker exec -it mysql bash -c 'mysql -u root -p$MYSQL_ROOT_PASSWORD --database o
 show tables;
 ----
 
-There's an extra table here called `{dc}_out_of_stock_events` that not in the schema diagram above, we'll cover this table separately later on.
+There's an extra table here called `dc_out_of_stock_events` that not in the schema diagram above, we'll cover this table separately later on.
 
 [source,subs="attributes"]
 ----
@@ -82,7 +85,7 @@ There's an extra table here called `{dc}_out_of_stock_events` that not in the sc
 | Tables_in_orders         |
 +--------------------------+
 | customers                |
-| {dc}_out_of_stock_events |
+| dc_out_of_stock_events |
 | products                 |
 | purchase_order_details   |
 | purchase_orders          |
@@ -221,6 +224,8 @@ We now have `sales_order` and `sales_order_details` rows being created for us by
 
 == Lab 3: Stream Events to Confluent Platform
 
+#TODO: revoir le texte et les images#
+
 Now that we have data being automatically created in our MySQL database it's time to stream those changes into your on-premise Kafka cluster. We can do this using the link:https://debezium.io/documentation/reference/1.0/connectors/mysql.html[Debezium MySQL Source connector , window=_blank]
 
 image::./images/2_mysql_source_connector.png[]
@@ -235,32 +240,37 @@ To create the Debezium MySQL Source connector instance run the following command
 ====
 [source,subs="attributes"]
 ----
-CREATE SOURCE CONNECTOR mysql_source_connector WITH (
-'connector.class'='io.debezium.connector.mysql.MySqlConnector',
-'database.hostname'='mysql',
-'database.port'='3306',
-'database.user'='mysqluser',
-'database.password'='mysqlpw',
-'database.server.id'='12345',
-'database.server.name'='{dc}',
-'database.whitelist'='orders',
-'table.blacklist'='orders.{dc}_out_of_stock_events',
-'database.history.kafka.bootstrap.servers'='broker:29092',
-'database.history.kafka.topic'='debezium_dbhistory',
-'include.schema.changes'='false',
-'snapshot.mode'='when_needed',
-'transforms'='unwrap,sourcedc,TopicRename,extractKey',
-'transforms.unwrap.type'='io.debezium.transforms.UnwrapFromEnvelope',
-'transforms.sourcedc.type'='org.apache.kafka.connect.transforms.InsertField$Value',
-'transforms.sourcedc.static.field'='sourcedc',
-'transforms.sourcedc.static.value'='{dc}',
-'transforms.TopicRename.type'='org.apache.kafka.connect.transforms.RegexRouter',
-'transforms.TopicRename.regex'='(.*)\\.(.*)\\.(.*)',
-'transforms.TopicRename.replacement'='$1_$3',
-'transforms.extractKey.type'='org.apache.kafka.connect.transforms.ExtractField$Key',
-'transforms.extractKey.field'='id',
-'key.converter'='org.apache.kafka.connect.converters.IntegerConverter'
-);
+curl -i -X POST -H "Accept:application/json" \
+  -H  "Content-Type:application/json" http://localhost:8083/connectors/ \
+  -d '{
+    "name": "mysql-source-connector",
+    "config": {
+          "connector.class": "io.debezium.connector.mysql.MySqlConnector",
+          "database.hostname": "mysql",
+          "database.port": "3306",
+          "database.user": "mysqluser",
+          "database.password": "mysqlpw",
+          "database.server.id": "12345",
+          "database.server.name": "dc",
+          "database.whitelist": "orders",
+          "table.blacklist": "orders.dc_out_of_stock_events",
+          "database.history.kafka.bootstrap.servers": "broker:29092",
+          "database.history.kafka.topic": "debezium_dbhistory" ,
+          "include.schema.changes": "false",
+          "snapshot.mode": "when_needed",
+          "transforms": "unwrap,sourcedc,TopicRename,extractKey",
+          "transforms.unwrap.type": "io.debezium.transforms.UnwrapFromEnvelope",
+          "transforms.sourcedc.type":"org.apache.kafka.connect.transforms.InsertField$Value",
+          "transforms.sourcedc.static.field":"sourcedc",
+          "transforms.sourcedc.static.value":"dc",
+          "transforms.TopicRename.type": "org.apache.kafka.connect.transforms.RegexRouter",
+          "transforms.TopicRename.regex": "(.*)\\.(.*)\\.(.*)",
+          "transforms.TopicRename.replacement": "$1_$3",
+          "transforms.extractKey.type": "org.apache.kafka.connect.transforms.ExtractField$Key",
+          "transforms.extractKey.field": "id",
+          "key.converter": "org.apache.kafka.connect.converters.IntegerConverter"
+      }
+  }'
 ----
 ====
 
@@ -268,7 +278,7 @@ We can confirm the connector is running by querying the REST interface
 
 [source]
 ----
-curl -s localhost:18083/connectors/mysql-source-connector/status | jq
+curl -s localhost:8083/connectors/mysql-source-connector/status | jq
 ----
 
 You should see that the connector's state is `RUNNING`
@@ -279,13 +289,13 @@ You should see that the connector's state is `RUNNING`
   "name": "mysql-source-connector",
   "connector": {
     "state": "RUNNING",
-    "worker_id": "kafka-connect-onprem:18083"
+    "worker_id": "kafka-connect:8083"
   },
   "tasks": [
     {
       "id": 0,
       "state": "RUNNING",
-      "worker_id": "kafka-connect-onprem:18083"
+      "worker_id": "kafka-connect:8083"
     }
   ],
   "type": "source"
@@ -297,17 +307,7 @@ You should see that the connector's state is `RUNNING`
 
 Now that the MySQL source connector is up and running, we will be able to see messages appear in our local Kafka cluster. 
 
-We can use link:http://{externalip}:9021[Confluent Control Center, window=_blank] to confirm this. 
-
-Use the following and username and password to authenticate to Confluent Control Center
-
-[source,subs="attributes"]
-----
-Username: {dc}
-Password: your workshop password
-----
-
-image::./images/c3_05.png[]
+We can use link:http://localhost:9021/clusters[Confluent Control Center, window=_blank] to confirm this.
 
 On the landing page we can see that Confluent Control Center is monitoring two Kafka Clusters, our on-premise cluster and a Confluent Cloud Cluster
 
@@ -321,7 +321,7 @@ Select the Topics Menu on the left
 
 image::./images/c3_30.png[]
 
-Select the `{dc}_sales_order_details` topic
+Select the `dc_sales_order_details` topic
 
 image::./images/c3_40.png[]
 
@@ -338,104 +338,9 @@ image::./images/c3_50.png[]
 * link:https://docs.confluent.io/current/control-center/index.html[Confluent Control Center Documentation]
 ====
 
-== Lab 4: Stream Events to Confluent Cloud
+== Lab 4: Creating a ksqlDB Application
 
-Now that your on-premise Kafka cluster is receiving events from your MySQL Database let's use Confluent Replicator to stream those messages to Confluent Cloud
-
-image::./images/3_replicate_to_ccloud.png[]
-
-=== Create the Replicator Connector Instance
-
-Confluent Replicator uses Kafka Connect under the covers and can be considered a special type of connector, however, unlike other connectors, the source _and_ target technology for the connector is a Kafka Cluster.
-
-To support this connector, we have another Kafka Connect worker running in a different docker container called `kafka-connect-ccloud`. This Kafka Connect worker is configured to connect to the Confluent Cloud instance provisioned for this workshop. This Kafka Connect worker has an internal REST server listening on port `18084`.
-
-Run the following from the command line to create the Replicator Connector instance, this connector will replicate events from you on-premise Kafka cluster to your Confluent Cloud Cluster.
-
-[IMPORTANT]
-====
-[source,subs="attributes"]
-----
-curl -i -X POST -H "Accept:application/json" \
-    -H  "Content-Type:application/json" http://localhost:18084/connectors/ \
-    -d '{
-        "name": "replicator-{dc}-to-ccloud",
-        "config": {
-          "connector.class": "io.confluent.connect.replicator.ReplicatorSourceConnector",
-          "key.converter": "io.confluent.connect.replicator.util.ByteArrayConverter",
-          "value.converter": "io.confluent.connect.replicator.util.ByteArrayConverter",
-          "topic.config.sync": false,
-          "topic.regex": "dc[0-9][0-9][_].*",
-          "topic.blacklist": "{dc}_out_of_stock_events",
-          "dest.kafka.bootstrap.servers": "${file:/secrets.properties:CCLOUD_CLUSTER_ENDPOINT}",
-          "dest.kafka.security.protocol": "SASL_SSL",
-          "dest.kafka.sasl.mechanism": "PLAIN",
-          "dest.kafka.sasl.jaas.config": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/secrets.properties:CCLOUD_API_KEY}\" password=\"${file:/secrets.properties:CCLOUD_API_SECRET}\";",
-          "dest.kafka.replication.factor": 3,
-          "src.kafka.bootstrap.servers": "broker:29092",
-          "src.consumer.group.id": "replicator-{dc}-to-ccloud",
-          "src.consumer.interceptor.classes": "io.confluent.monitoring.clients.interceptor.MonitoringConsumerInterceptor",
-          "src.consumer.confluent.monitoring.interceptor.bootstrap.servers": "broker:29092",
-          "src.kafka.timestamps.producer.interceptor.classes": "io.confluent.monitoring.clients.interceptor.MonitoringProducerInterceptor",
-          "src.kafka.timestamps.producer.confluent.monitoring.interceptor.bootstrap.servers": "broker:29092",
-          "tasks.max": "1"
-        }
-    }'
-----
-====
-
-Confirm that Replicator is in a `RUNNING` state
-
-[source,subs="attributes"]
-----
-curl -s localhost:18084/connectors/replicator-{dc}-to-ccloud/status | jq
-----
-
-[source,subs="attributes"]]
-----
-{
-  "name": "replicator-{dc}-to-ccloud",
-  "connector": {
-    "state": "RUNNING",
-    "worker_id": "kafka-connect-ccloud:18084"
-  },
-  "tasks": [
-    {
-      "id": 0,
-      "state": "RUNNING",
-      "worker_id": "kafka-connect-ccloud:18084"
-    }
-  ],
-  "type": "source"
-}
-----
-
-=== Confirm that Messages are Arriving in Confluent Cloud
-
-Jump back to link:http://{externalip}:9021[Confluent Control Center, window=_blank]
-
-Select the "CC" cluster from the left-hand navigation bar and then select "Topics". 
-
-This Confluent Cloud Instance is being shared by other users of the workshop and as a result you will see topics being replicated from other data centers. To see just your topics, type your data center name, {dc}, into the search box at the top to filter.
-
-image::./images/c3_60.png[]
-
-Select the `{dc}_sales_order_details` topic and finally the "Messages" tab under the topic heading. You should see messages streaming in from your on-premise Kafka cluster.
-
-image::./images/c3_70.png[]
-
-We can also view the status of Replicator in Confluent Control Center by selecting "Replicators" on the left-hand navigation pane. Here we can see throughput and latency statistics.
-
-image::./images/c3_72.png[]
-
-.Further Reading
-[TIP]
-====
-* link:https://docs.confluent.io/current/connect/kafka-connect-replicator/index.html[Confluent Replicator]
-* link:https://docs.confluent.io/current/connect/kafka-connect-replicator/configuration_options.html[Confluent Replicator Configuration Properties]
-====
-
-== Lab 5: Creating a ksqlDB Application
+#TODO: revoir text et image#
 
 We now have all the data we need being streamed, in realtime, to Confluent Cloud. You have a ksqlDB Server running inside a docker container that is configured to point to our Confluent Cloud cluster. In a real world deployment, it is likely that this ksqlDB Server would be running closer to Confluent Cloud but for the purposes of this workshop it is not important.
 
@@ -453,13 +358,14 @@ To start the ksqlDB CLI run the following command:-
 ====
 [source,subs="attributes"]
 ----
-docker exec -it ksqldb-cli ksql http://ksqldb-server-ccloud:8088
+docker exec -it ksqldb-cli ksql http://ksqldb-server:8088
 ----
 ====
 
 You should see something like this:-
 
-```
+[source]
+----
                   ===========================================
                   =       _              _ ____  ____       =
                   =      | | _____  __ _| |  _ \| __ )      =
@@ -473,13 +379,13 @@ You should see something like this:-
 
 Copyright 2017-2020 Confluent Inc.
 
-CLI v0.9.0, Server v0.9.0 located at http://ksqldb-server-ccloud:8088
+CLI v0.10.1, Server v0.10.1 located at http://ksqldb-server:8088
 
 Having trouble? Type 'help' (case-insensitive) for a rundown of how things work!
 
 ksql>
 
-```
+----
 
 The ksqlDB CLI is pointing at a ksqlDB Server connected to your Confluent Cloud instance.
 
@@ -487,45 +393,43 @@ To view a list of all topics in Confluent Cloud run the following command:-
 
 `show topics;`
 
-You should see your own topics, `{dc}_*`, along with topics from other workshop users.
+You should see your own topics, `dc_*`, along with topics from other workshop users.
 
 ```
 ksql> show topics;
 
- Kafka Topic                 | Partitions | Partition Replicas
----------------------------------------------------------------
- dc01_customers              | 1          | 3
- dc01_products               | 1          | 3
- dc01_purchase_order_details | 1          | 3
- dc01_purchase_orders        | 1          | 3
- dc01_sales_order_details    | 1          | 3
- dc01_sales_orders           | 1          | 3
- dc01_suppliers              | 1          | 3
- dc02_customers              | 1          | 3
- dc02_products               | 1          | 3
- dc02_purchase_order_details | 1          | 3
- dc02_purchase_orders        | 1          | 3
- dc02_sales_order_details    | 1          | 3
+ Kafka Topic               | Partitions | Partition Replicas
+-------------------------------------------------------------
+ dc                        | 3          | 1
+ dc_customers              | 3          | 1
+ dc_products               | 3          | 1
+ dc_purchase_order_details | 3          | 1
+ dc_purchase_orders        | 3          | 1
+ dc_sales_order_details    | 3          | 1
+ dc_sales_orders           | 3          | 1
+ dc_suppliers              | 3          | 1
+ debezium_dbhistory        | 1          | 1
 ...
+-------------------------------------------------------------
 ```
 
 === Inspect a topic\'s contents
 
 To inspect the contents of a topic run the following:-
 
-`PRINT {dc}_sales_orders;`
+`PRINT dc_sales_orders;`
 
 You should see something similar:-
 
 [source,subs="attributes"]
 ----
-ksql> PRINT {dc}_sales_orders;
+ksql> PRINT dc_sales_orders;
 Key format: AVRO
 Value format: AVRO
-rowtime: 2020/05/20 10:10:29.264 Z, key: {"id": 1}, value: {"id": 1, "order_date": 1589969387000, "customer_id": 14, "sourcedc": "{dc}"}
-rowtime: 2020/05/20 10:10:29.265 Z, key: {"id": 2}, value: {"id": 2, "order_date": 1589969392000, "customer_id": 14, "sourcedc": "{dc}"}
-rowtime: 2020/05/20 10:10:29.265 Z, key: {"id": 3}, value: {"id": 3, "order_date": 1589969397000, "customer_id": 14, "sourcedc": "{dc}"}
-rowtime: 2020/05/20 10:10:29.265 Z, key: {"id": 4}, value: {"id": 4, "order_date": 1589969402000, "customer_id": 7, "sourcedc": "{dc}"}
+rowtime: 2020/05/20 10:10:29.264 Z, key: {"id": 1}, value: {"id": 1, "order_date": 1589969387000, "customer_id": 14, "sourcedc": "dc"}
+rowtime: 2020/05/20 10:10:29.265 Z, key: {"id": 2}, value: {"id": 2, "order_date": 1589969392000, "customer_id": 14, "sourcedc": "dc"}
+rowtime: 2020/05/20 10:10:29.265 Z, key: {"id": 3}, value: {"id": 3, "order_date": 1589969397000, "customer_id": 14, "sourcedc": "dc"}
+rowtime: 2020/05/20 10:10:29.265 Z, key: {"id": 4}, value: {"id": 4, "order_date": 1589969402000, "customer_id": 7, "sourcedc": "dc"}
 ...
 ----
 
@@ -541,7 +445,7 @@ We can do this using a `CREATE STREAM` statement. Run the following command to c
 ====
 [source,subs="quotes,attributes"]
 ----
-*CREATE STREAM* sales_orders *WITH* (KAFKA_TOPIC='{dc}_sales_orders', VALUE_FORMAT='AVRO');
+*CREATE STREAM* sales_orders *WITH* (KAFKA_TOPIC='dc_sales_orders', VALUE_FORMAT='AVRO');
 ----
 ====
 
@@ -551,7 +455,7 @@ You should see the following output
 
 [source,subs="attributes"]
 ----
-ksql> CREATE STREAM sales_orders WITH (KAFKA_TOPIC='{dc}_sales_orders', VALUE_FORMAT='AVRO');
+ksql> CREATE STREAM sales_orders WITH (KAFKA_TOPIC='dc_sales_orders', VALUE_FORMAT='AVRO');
 
  Message
 ----------------
@@ -565,12 +469,12 @@ Create streams for each of your remaining topics
 ====
 [source,subs="quotes,attributes"]
 ----
-*CREATE STREAM* sales_order_details *WITH* (KAFKA_TOPIC='{dc}_sales_order_details', VALUE_FORMAT='AVRO');
-*CREATE STREAM* purchase_orders *WITH* (KAFKA_TOPIC='{dc}_purchase_orders', VALUE_FORMAT='AVRO');
-*CREATE STREAM* purchase_order_details *WITH* (KAFKA_TOPIC='{dc}_purchase_order_details', VALUE_FORMAT='AVRO');
-*CREATE STREAM* products *WITH* (KAFKA_TOPIC='{dc}_products', VALUE_FORMAT='AVRO');
-*CREATE STREAM* customers *WITH* (KAFKA_TOPIC='{dc}_customers', VALUE_FORMAT='AVRO');
-*CREATE STREAM* suppliers *WITH* (KAFKA_TOPIC='{dc}_suppliers', VALUE_FORMAT='AVRO');
+*CREATE STREAM* sales_order_details *WITH* (KAFKA_TOPIC='dc_sales_order_details', VALUE_FORMAT='AVRO');
+*CREATE STREAM* purchase_orders *WITH* (KAFKA_TOPIC='dc_purchase_orders', VALUE_FORMAT='AVRO');
+*CREATE STREAM* purchase_order_details *WITH* (KAFKA_TOPIC='dc_purchase_order_details', VALUE_FORMAT='AVRO');
+*CREATE STREAM* products *WITH* (KAFKA_TOPIC='dc_products', VALUE_FORMAT='AVRO');
+*CREATE STREAM* customers *WITH* (KAFKA_TOPIC='dc_customers', VALUE_FORMAT='AVRO');
+*CREATE STREAM* suppliers *WITH* (KAFKA_TOPIC='dc_suppliers', VALUE_FORMAT='AVRO');
 ----
 ====
 
@@ -589,13 +493,13 @@ Notice that each stream is mapped to an underlying Kafka topic and that the form
 ----
  Stream Name            | Kafka Topic                 | Format
 ---------------------------------------------------------------
- CUSTOMERS              | {dc}_customers              | AVRO
- PRODUCTS               | {dc}_products               | AVRO
- PURCHASE_ORDERS        | {dc}_purchase_orders        | AVRO
- PURCHASE_ORDER_DETAILS | {dc}_purchase_order_details | AVRO
- SALES_ORDERS           | {dc}_sales_orders           | AVRO
- SALES_ORDER_DETAILS    | {dc}_sales_order_details    | AVRO
- SUPPLIERS              | {dc}_suppliers              | AVRO
+ CUSTOMERS              | dc_customers              | AVRO
+ PRODUCTS               | dc_products               | AVRO
+ PURCHASE_ORDERS        | dc_purchase_orders        | AVRO
+ PURCHASE_ORDER_DETAILS | dc_purchase_order_details | AVRO
+ SALES_ORDERS           | dc_sales_orders           | AVRO
+ SALES_ORDER_DETAILS    | dc_sales_order_details    | AVRO
+ SUPPLIERS              | dc_suppliers              | AVRO
 ---------------------------------------------------------------
 ----
 
@@ -608,22 +512,18 @@ To view the details of an individual topic you can you can use the `describe` co
 
 Notice that all the columns have been created for us and we didn't need to explicitly set their names and data types when we created the stream, this is one of the advantages of using AVRO and the Schema Registry.
 
-Also notice that ksqlDB adds an implicit `ROWKEY` column to every stream and table, which represents the corresponding Kafka message key.
-
 [source,subs="attributes"]
 ----
 Name                 : SALES_ORDER_DETAILS
  Field          | Type
------------------------------------------
- ROWKEY         | VARCHAR(STRING)  (key)
+----------------------------------
  ID             | INTEGER
  SALES_ORDER_ID | INTEGER
  PRODUCT_ID     | INTEGER
  QUANTITY       | INTEGER
  PRICE          | DECIMAL
  SOURCEDC       | VARCHAR(STRING)
------------------------------------------
-For runtime statistics and query details run: DESCRIBE EXTENDED <Stream,Table>;
+----------------------------------
 ----
 
 .Further Reading
@@ -633,7 +533,9 @@ For runtime statistics and query details run: DESCRIBE EXTENDED <Stream,Table>;
 * link:https://docs.ksqldb.io/en/latest/developer-guide/create-a-stream/[ksqlDB Streams]
 ====
 
-== Lab 6: Querying Streams with ksqlDB
+== Lab 5: Querying Streams with ksqlDB
+
+#TODO: revoir le texte et les images#
 
 There are two types of query in ksqlDB, *Push* queries and *Pull* queries.
 
@@ -693,7 +595,9 @@ Let's start by running a Push query and consume all messages from the beginning 
 ----
 
 You should see something similar to this:-
-```
+
+[source]
+----
 ksql> SELECT id, sales_order_id, product_id, quantity, price FROM sales_order_details EMIT CHANGES;
 +-----------------+-----------------+-----------------+-----------------+-----------------+
 |ID               |SALES_ORDER_ID   |PRODUCT_ID       |QUANTITY         |PRICE            |
@@ -717,7 +621,7 @@ ksql> SELECT id, sales_order_id, product_id, quantity, price FROM sales_order_de
 |482              |159              |10               |4                |5.32             |
 |483              |160              |25               |8                |9.00             |
 
-```
+----
 Press `ctrl-c` to stop
 
 Notice that events continue to stream to the console until you explicitly cancel the query, this is because when we are working with streams in ksqlDB the data set is unbounded and could theoretically continue forever.
@@ -803,7 +707,9 @@ Press `ctrl-c` to stop
 * link:https://docs.confluent.io/current/ksql/docs/installation/server-config/config-reference.html#ksql-streams-auto-offset-reset[ksqlDB Offset Management]
 ====
 
-== Lab 7: Creating ksqlDB tables
+== Lab 6: Creating ksqlDB tables
+
+#TODO: revoir le texte et les images#
 
 ksqlDB tables allow you to work the data in topics as key/value pairs, with a single value for each key. Tables can be created from an existing topic or from the query results from other tables or streams. You can read more about this https://docs.confluent.io/current/streams/concepts.html#duality-of-streams-and-tables[here].
 
@@ -828,7 +734,7 @@ Create your 3 ksqlDB tables.
   SOURCEDC    VARCHAR
 ) 
 *WITH* (
-  KAFKA_TOPIC='{dc}_customers', 
+  KAFKA_TOPIC='dc_customers',
   VALUE_FORMAT='AVRO'
 );
 ----
@@ -847,7 +753,7 @@ Create your 3 ksqlDB tables.
   SOURCEDC    VARCHAR
 ) 
 *WITH* (
-  KAFKA_TOPIC='{dc}_suppliers', 
+  KAFKA_TOPIC='dc_suppliers',
   VALUE_FORMAT='AVRO'
 );
 ----
@@ -866,7 +772,7 @@ Create your 3 ksqlDB tables.
   SOURCEDC    VARCHAR
 ) 
 *WITH* (
-  KAFKA_TOPIC='{dc}_products', 
+  KAFKA_TOPIC='dc_products',
   VALUE_FORMAT='AVRO'
 );
 ----
@@ -885,9 +791,9 @@ SHOW TABLES;
 ----
  Table Name    | Kafka Topic    | Format | Windowed
 ----------------------------------------------------
- CUSTOMERS_TBL | {dc}_customers | AVRO   | false
- PRODUCTS_TBL  | {dc}_products  | AVRO   | false
- SUPPLIERS_TBL | {dc}_suppliers | AVRO   | false
+ CUSTOMERS_TBL | dc_customers   | AVRO   | false
+ PRODUCTS_TBL  | dc_products    | AVRO   | false
+ SUPPLIERS_TBL | dc_suppliers   | AVRO   | false
 ----------------------------------------------------
 ----
 
@@ -901,7 +807,9 @@ We'll use these tables soon and join them to our streams.
 * link:https://docs.confluent.io/current/ksql/docs/developer-guide/syntax-reference.html#create-stream-as-select[CREATE STREAM AS SELECT Syntax]
 ====
 
-== Lab 8: Joining Steams & Tables with ksqlDB
+== Lab 7: Joining Steams & Tables with ksqlDB
+
+#TODO: revoir le texte et les images#
 
 We can join two streams together in ksqlDB using a windowed join. When using a windowed join, you must specify a windowing scheme by using the `WITHIN` clause. A new input record on one side produces a join output for each matching record on the other side, and there can be multiple such matching records within a join window.
 
@@ -914,7 +822,7 @@ We are also joining to the `customers_tbl` and `products_tbl` tables
 [source,subs="quotes,attributes"]
 ----
 SET 'auto.offset.reset'='earliest';
-*CREATE STREAM* sales_enriched *WITH* (PARTITIONS = 1, KAFKA_TOPIC = '{dc}_sales_enriched') AS SELECT
+*CREATE STREAM* sales_enriched *WITH* (PARTITIONS = 1, KAFKA_TOPIC = 'dc_sales_enriched') AS SELECT
     o.id order_id,
     od.id order_details_id,
     o.order_date,
@@ -952,11 +860,10 @@ If we run a describe on this stream...
 Name                 : SALES_ENRICHED
  Field            | Type
 -------------------------------------------
- ROWKEY           | INTEGER          (key)
+ PRODUCT_ID       | INTEGER          (key)
  ORDER_ID         | INTEGER
  ORDER_DETAILS_ID | INTEGER
  ORDER_DATE       | BIGINT
- PRODUCT_ID       | INTEGER
  PRODUCT_NAME     | VARCHAR(STRING)
  PRODUCT_DESC     | VARCHAR(STRING)
  PRODUCT_PRICE    | DECIMAL
@@ -979,7 +886,7 @@ We now need to create an equivalent `purchases_enriched` stream that combines th
 [source,subs="quotes,attributes"]
 ----
 SET 'auto.offset.reset'='earliest';
-*CREATE STREAM* purchases_enriched *WITH* (PARTITIONS = 1, KAFKA_TOPIC = '{dc}_purchases_enriched') AS SELECT
+*CREATE STREAM* purchases_enriched *WITH* (PARTITIONS = 1, KAFKA_TOPIC = 'dc_purchases_enriched') AS SELECT
     o.id order_id,
     od.id order_details_id,
     o.order_date,
@@ -1014,11 +921,10 @@ If we run a describe on this stream...
 Name                 : PURCHASES_ENRICHED
  Field            | Type
 -------------------------------------------
- ROWKEY           | INTEGER          (key)
+ PRODUCT_ID       | INTEGER          (key)
  ORDER_ID         | INTEGER
  ORDER_DETAILS_ID | INTEGER
  ORDER_DATE       | BIGINT
- PRODUCT_ID       | INTEGER
  PRODUCT_NAME     | VARCHAR(STRING)
  PRODUCT_DESC     | VARCHAR(STRING)
  PRODUCT_COST     | DECIMAL
@@ -1029,7 +935,6 @@ Name                 : PURCHASES_ENRICHED
  SUPPLIER_CITY    | VARCHAR(STRING)
  SUPPLIER_COUNTRY | VARCHAR(STRING)
 -------------------------------------------
-
 ----
 
 ...you'll see that we have also denormalized the `purchase_orders`, `purchase_order_details`, `suppliers` and `products` streams/tables into a single event stream.
@@ -1091,7 +996,9 @@ Notice that the query returns the first 30 purchase order lines and then stops; 
 * link:https://docs.ksqldb.io/en/latest/developer-guide/joins/join-streams-and-tables/[Stream-Table Joins]
 ====
 
-== Lab 9: Streaming Current Stock Levels
+== Lab 8: Streaming Current Stock Levels
+
+#TODO: revoir le texte et les images#
 
 Before we can create an out of stock event stream, we need to work out the current stock levels for each product. We can do this by combining the `sales_enriched` stream with the `purchases_enriched` stream and summing the `sales_enriched.quantity` column (stock decrements) and the `purchases_enriched.quantity` column (stock increments).
 
@@ -1102,7 +1009,7 @@ Let's have a go at this now by creating a new stream called `product_supply_and_
 [source,subs="quotes,attributes"]
 ----
 *SET* 'auto.offset.reset'='earliest';
-*CREATE STREAM* product_supply_and_demand *WITH* (PARTITIONS=1, KAFKA_TOPIC='{dc}_product_supply_and_demand') *AS SELECT* 
+*CREATE STREAM* product_supply_and_demand *WITH* (PARTITIONS=1, KAFKA_TOPIC='dc_product_supply_and_demand') *AS SELECT*
   product_id, 
   product_qty * -1 "QUANTITY" 
 *FROM* sales_enriched;
@@ -1179,17 +1086,17 @@ We can see the demand for a single product by filtering on the `product_id` and 
 +------------------------------------------+------------------------------------------+
 |PRODUCT_ID                                |QUANTITY                                  |
 +------------------------------------------+------------------------------------------+
-|1                                         |-6                                        |
-|1                                         |-9                                        |
-|1                                         |-7                                        |
-|1                                         |-5                                        |
-|1                                         |-1                                        |
-|1                                         |-7                                        |
-|1                                         |-7                                        |
-|1                                         |-10                                       |
-|1                                         |-8                                        |
-|1                                         |-4                                        |
-|1                                         |-2                                        |
+|15                                        |-6                                        |
+|15                                        |-9                                        |
+|15                                        |-7                                        |
+|15                                        |-5                                        |
+|15                                        |-1                                        |
+|15                                        |-7                                        |
+|15                                        |-7                                        |
+|15                                        |-10                                       |
+|15                                        |-8                                        |
+|15                                        |-4                                        |
+|15                                        |-2                                        |
 ...
 ...
 ...
@@ -1215,17 +1122,17 @@ This query will only return a single event and reflects the initial purchase ord
 +------------------------------------------+------------------------------------------+
 |PRODUCT_ID                                |QUANTITY                                  |
 +------------------------------------------+------------------------------------------+
-|1                                         |100                                       |
+|15                                        |100                                       |
 ----
 
-We're now is a position where we can calculate the current stock level for each product. We can do this by creating a table that groups by the `product_id` and sums up the `quantity` column which contains both stock decrements and stock increments.
+We're now in a position where we can calculate the current stock level for each product. We can do this by creating a table that groups by the `product_id` and sums up the `quantity` column which contains both stock decrements and stock increments.
 
 [IMPORTANT]
 ====
 [source,subs="quotes,attributes"]
 ----
 *SET* 'auto.offset.reset'='earliest';
-*CREATE TABLE* current_stock *WITH* (PARTITIONS = 1, KAFKA_TOPIC = '{dc}_current_stock') *AS SELECT* 
+*CREATE TABLE* current_stock *WITH* (PARTITIONS = 1, KAFKA_TOPIC = 'dc_current_stock') *AS SELECT*
       product_id
     , SUM(quantity) "STOCK_LEVEL" 
 *FROM* product_supply_and_demand
@@ -1258,7 +1165,9 @@ Depending on how long it took you to get to this point in the workshop, you may 
 ====
 
 
-== Lab 10: Pull Queries
+== Lab 9: Pull Queries
+
+#TODO: revoir le texte et les images#
 
 We can now run our first Pull query. Pull queries are used against tables with aggregates and can only query a single key.
 
@@ -1278,7 +1187,7 @@ The query will return the current stock level and immediatly terminate.
 +----------------------------------------------------+----------------------------------------------------+
 |PRODUCT_ID                                          |STOCK_LEVEL                                         |
 +----------------------------------------------------+----------------------------------------------------+
-|1                                                   |-67                                                 |
+|15                                                  |-67                                                 |
 Query terminated
 ----
 
@@ -1299,13 +1208,13 @@ As you can see, the ksqlDB Server's REST endpoint will return a JSON message wit
   {
     "header": {
       "queryId": "query_1582892390468",
-      "schema": "`PRODUCT_ID` INTEGER, `STOCK_LEVEL` INTEGER"
+      "schema": "`PRODUCT_ID` INTEGER KEY, `STOCK_LEVEL` INTEGER"
     }
   },
   {
     "row": {
       "columns": [
-        1,
+        15,
         -76
       ]
     }
@@ -1320,7 +1229,9 @@ As you can see, the ksqlDB Server's REST endpoint will return a JSON message wit
 * link:https://docs.ksqldb.io/en/latest/developer-guide/api/[ksqlDB REST API]
 ====
 
-== Lab 11: Streaming Recent Product Demand
+== Lab 10: Streaming Recent Product Demand
+
+#TODO: revoir le texte et les images#
 
 Now that we know the current stock level is for each product, we can use this information to send an event to the orders application and ask it to create purchase orders to replenish the stock, but how much should we stock should we order? we could just order enough to satisfy the current backlog but we'd quickly run out of stock again. 
 
@@ -1328,12 +1239,12 @@ What we really want to do is order enough to satisfy the backlog _and_ enough to
 
 In the following query we are creating a table that will calculate the demand for each product over the last 3 minutes using a `WINDOW HOPPING` clause.
 
-Hopping windows are based on time intervals. They model fixed-sized, possibly overlapping windows. A hopping window is defined by two properties: the window’s duration and its advance, or “hop”, interval. The advance interval specifies how far a window moves forward in time relative to the previous window. In our query we we have a window with a duration of three minutes and an advance interval of one minute. Because hopping windows can overlap, a record can belong to more than one such window.
+Hopping windows are based on time intervals. They model fixed-sized, possibly overlapping windows. A hopping window is defined by two properties: the window’s duration and its advance, or “hop”, interval. The advance interval specifies how far a window moves forward in time relative to the previous window. In our query we have a window with a duration of three minutes and an advance interval of one minute. Because hopping windows can overlap, a record can belong to more than one such window.
 
 Start the ksqlDB CLI if you haven't already
 [source,subs=attributes+]
 ----
-docker exec -it ksqldb-cli ksql http://ksqldb-server-ccloud:8088
+docker exec -it ksqldb-cli ksql http://ksqldb-server:8088
 ----
 
 Create the windowed query
@@ -1343,12 +1254,12 @@ Create the windowed query
 [source,subs="quotes,attributes"]
 ----
 *SET* 'auto.offset.reset'='earliest';
-*CREATE TABLE* product_demand_last_3mins_tbl *WITH* (PARTITIONS = 1, KAFKA_TOPIC = '{dc}_product_demand_last_3mins') 
+*CREATE TABLE* product_demand_last_3mins_tbl *WITH* (PARTITIONS = 1, KAFKA_TOPIC = 'dc_product_demand_last_3mins')
 *AS SELECT*
-    product_id as rowkey,
     timestamptostring(windowStart,'HH:mm:ss') "WINDOW_START_TIME",
     timestamptostring(windowEnd,'HH:mm:ss') "WINDOW_END_TIME",
-    product_id,
+    product_id as rowkey,
+    AS_VALUE(product_id) as product_id,
     *SUM*(product_qty) "DEMAND_LAST_3MINS"
 *FROM* sales_enriched
 *WINDOW HOPPING* (SIZE 3 MINUTES, ADVANCE BY 1 MINUTE)
@@ -1379,24 +1290,24 @@ If we query this table for a single product...
 +-----------------+-----------------+-----------------+-----------------+
 |WINDOW_START_TIME|WINDOW_END_TIME  |PRODUCT_ID       |DEMAND_LAST_3MINS|
 +-----------------+-----------------+-----------------+-----------------+
-|13:33:00         |13:36:00         |1                |10               |
-|13:34:00         |13:37:00         |1                |10               |
-|13:35:00         |13:38:00         |1                |1                |
-|13:33:00         |13:36:00         |1                |11               |
-|13:34:00         |13:37:00         |1                |11               |
-|13:35:00         |13:38:00         |1                |2                |
-|13:34:00         |13:37:00         |1                |21               |
-|13:35:00         |13:38:00         |1                |12               |
-|13:36:00         |13:39:00         |1                |10               |
-|13:34:00         |13:37:00         |1                |26               |
-|13:35:00         |13:38:00         |1                |17               |
-|13:36:00         |13:39:00         |1                |15               |
-|13:35:00         |13:38:00         |1                |22               |
-|13:36:00         |13:39:00         |1                |20               |
-|13:37:00         |13:40:00         |1                |5                |
-|13:36:00         |13:39:00         |1                |28               |
-|13:37:00         |13:40:00         |1                |13               |
-|13:38:00         |13:41:00         |1                |8                |
+|13:33:00         |13:36:00         |15               |10               |
+|13:34:00         |13:37:00         |15               |10               |
+|13:35:00         |13:38:00         |15               |1                |
+|13:33:00         |13:36:00         |15               |11               |
+|13:34:00         |13:37:00         |15               |11               |
+|13:35:00         |13:38:00         |15               |2                |
+|13:34:00         |13:37:00         |15               |21               |
+|13:35:00         |13:38:00         |15               |12               |
+|13:36:00         |13:39:00         |15               |10               |
+|13:34:00         |13:37:00         |15               |26               |
+|13:35:00         |13:38:00         |15               |17               |
+|13:36:00         |13:39:00         |15               |15               |
+|13:35:00         |13:38:00         |15               |22               |
+|13:36:00         |13:39:00         |15               |20               |
+|13:37:00         |13:40:00         |15               |5                |
+|13:36:00         |13:39:00         |15               |28               |
+|13:37:00         |13:40:00         |15               |13               |
+|13:38:00         |13:41:00         |15               |8                |
 
 ----
 
@@ -1408,7 +1319,7 @@ Create a stream from the table's underlying topic...
 ====
 [source,subs="quotes,attributes"]
 ----
-*CREATE STREAM* product_demand_last_3mins *WITH* (KAFKA_TOPIC='{dc}_product_demand_last_3mins', VALUE_FORMAT='AVRO');
+*CREATE STREAM* product_demand_last_3mins *WITH* (KAFKA_TOPIC='dc_product_demand_last_3mins', VALUE_FORMAT='AVRO');
 ----
 ====
 
@@ -1420,7 +1331,9 @@ image::./images/ksql_017.png[align="center"]
 * link:https://docs.ksqldb.io/en/latest/concepts/time-and-windows-in-ksqldb-queries/#windows-in-sql-queries[Windows in ksqlDB Queries]
 ====
 
-== Lab 12: Streaming _"Out of Stock"_ Events
+== Lab 11: Streaming _"Out of Stock"_ Events
+
+#TODO: revoir le texte et les images#
 
 Now that we have the `current_stock` table and `product_demand_last_3mins` stream, we can create a `out_of_stock_events` stream by joining the two together and calculating the required purchase order quantity. We calculate the `purchase_qty` from adding the inverse of the current stock level to the last 3 minutes of demand. The stream is filtered to only include products that have negative stock and therefore need purchase orders raising for them.
 
@@ -1429,7 +1342,7 @@ Now that we have the `current_stock` table and `product_demand_last_3mins` strea
 [source,subs="quotes,attributes"]
 ----
 *SET* 'auto.offset.reset' = 'latest';
-*CREATE STREAM* out_of_stock_events *WITH* (PARTITIONS = 1, KAFKA_TOPIC = '{dc}_out_of_stock_events') 
+*CREATE STREAM* out_of_stock_events *WITH* (PARTITIONS = 1, KAFKA_TOPIC = 'dc_out_of_stock_events')
 *AS SELECT*
     cs.product_id as rowkey,
     AS_VALUE(cs.product_id) as PRODUCT_ID,
@@ -1493,86 +1406,11 @@ When we query the `out_of_stock_events` stream...
 ...
 ----
 
-== Lab 13: Replicate Events to On-Premise Kafka
+== Lab 12: Sink Events into MySQL
 
-The next step is to replicate the `out_of_stock_events` topic to our on-premise cluster.
+#TODO: revoir le texte et les images#
 
-image::./images/5_replicate_to_onprem.png[]	
-
-Before we do that, let's create the target topic in our on-premise Kafka cluster using link:http://{externalip}:9021[Confluent Control Center, window=_blank]	
-Select your on-premise cluster from the left-hand navigation bar, select _"topics"_ and then click on _"Add a Topic"_. 	
-
-[IMPORTANT]
-====
-image::./images/c3_80.png[]	
-
-Name the topic `{dc}_out_of_stock_events` with one partition and click _"Create with defaults"_	
-
-image::./images/c3_90.png[]	
-
-We are now ready to replicate this topic from Confluent Cloud to your on-premise cluster.
-====
-
-=== Submit the Replicator Connector Config
-
-Execute the following to create the Replicator Connector.
-
-Exit the ksqlDB cli 
-
-[IMPORTANT]
-====
-exit
-====
-
-Create the connector using the cURL command.
-
-[IMPORTANT]
-====
-[source,subs="attributes"]
-----
-curl -i -X POST -H "Accept:application/json" \
-    -H  "Content-Type:application/json" http://localhost:18083/connectors/ \
-    -d '{
-        "name": "replicator-ccloud-to-{dc}",
-        "config": {
-          "connector.class": "io.confluent.connect.replicator.ReplicatorSourceConnector",
-          "key.converter": "io.confluent.connect.replicator.util.ByteArrayConverter",
-          "value.converter": "io.confluent.connect.replicator.util.ByteArrayConverter",
-          "topic.config.sync": "false",
-          "topic.whitelist": "{dc}_out_of_stock_events",
-          "dest.kafka.bootstrap.servers": "broker:29092",
-          "dest.kafka.replication.factor": 1,
-          "src.kafka.bootstrap.servers": "${file:/secrets.properties:CCLOUD_CLUSTER_ENDPOINT}",
-          "src.kafka.security.protocol": "SASL_SSL",
-          "src.kafka.sasl.mechanism": "PLAIN",
-          "src.kafka.sasl.jaas.config": "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${file:/secrets.properties:CCLOUD_API_KEY}\" password=\"${file:/secrets.properties:CCLOUD_API_SECRET}\";",
-          "src.consumer.group.id": "replicator-ccloud-to-{dc}",
-          "src.consumer.interceptor.classes": "io.confluent.monitoring.clients.interceptor.MonitoringConsumerInterceptor",
-          "src.consumer.confluent.monitoring.interceptor.bootstrap.servers": "${file:/secrets.properties:CCLOUD_CLUSTER_ENDPOINT}",
-          "src.kafka.timestamps.producer.interceptor.classes": "io.confluent.monitoring.clients.interceptor.MonitoringProducerInterceptor",
-          "src.kafka.timestamps.producer.confluent.monitoring.interceptor.bootstrap.servers": "${file:/secrets.properties:CCLOUD_CLUSTER_ENDPOINT}",
-          "tasks.max": "1"
-        }
-    }'
-----
-====
-
-Notice that we've specified only to replicate the `{dc}_out_of_stock_events` topic by configuring `"topic.whitelist": "{dc}_out_of_stock_events"`
-
-We can confirm that the `{dc}_out_of_stock_events` is being replicated from Confluent Cloud to our on-premise cluster by checking for messages in link:http://{externalip}:9021[Confluent Control Center, window=_blank]
-
-image::./images/c3_100.png[]
-
-.Further Reading
-[TIP]
-====
-* link:https://docs.confluent.io/current/connect/kafka-connect-replicator/index.html[Confluent Replicator]
-* link:https://docs.confluent.io/current/connect/kafka-connect-replicator/configuration_options.html[Confluent Replicator Configuration Properties]
-====
-
-== Lab 14: Sink Events into MySQL
-
-Finally we need to sink the `{dc}_out_of_stock_events` topic into a MySQL database table, the on-premise application will then process these events and create purchase order for us.
+Finally we need to sink the `dc_out_of_stock_events` topic into a MySQL database table, the on-premise application will then process these events and create purchase order for us.
 
 image::./images/6_jdbc_sink.png[]
 
@@ -1580,12 +1418,12 @@ But before we do that, let's open a couple more terminal sessions and start the 
 
 [source,subs=attributes+]
 ----
-ssh {dc}@{externalip}
+ssh dc@{externalip}
 ----
 
 [source,subs=attributes+]
 ----
-docker exec -it ksqldb-cli ksql http://ksqldb-server-ccloud:8088
+docker exec -it ksqldb-cli ksql http://ksqldb-server:8088
 ----
 
 Execute the following query in the 1st session...
@@ -1620,17 +1458,22 @@ In a third terminal session, create the JDBC Sink Connector by running the follo
 ====
 [source,subs="quotes,attributes"]
 ----
-CREATE SINK CONNECTOR jdbc_mysql_sink WITH (
-'connector.class'='io.confluent.connect.jdbc.JdbcSinkConnector',
-'topics'='{dc}_out_of_stock_events',
-'connection.url'='jdbc:mysql://mysql:3306/orders',
-'connection.user'='mysqluser',
-'connection.password'='mysqlpw',
-'insert.mode'='INSERT',
-'batch.size'='3000',
-'auto.create'='true',
-'key.converter'='org.apache.kafka.connect.storage.StringConverter'
-);
+curl -i -X POST -H "Accept:application/json" \
+    -H  "Content-Type:application/json" http://localhost:8083/connectors/ \
+    -d '{
+        "name": "jdbc-mysql-sink",
+        "config": {
+          "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
+          "topics": "dc_out_of_stock_events",
+          "connection.url": "jdbc:mysql://mysql:3306/orders",
+          "connection.user": "mysqluser",
+          "connection.password": "mysqlpw",
+          "insert.mode": "INSERT",
+          "batch.size": "3000",
+          "auto.create": "true",
+          "key.converter": "org.apache.kafka.connect.storage.StringConverter"
+       }
+    }'
 ----
 ====
 

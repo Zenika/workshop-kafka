@@ -1,5 +1,7 @@
 == Introduction
 
+#TODO: revoir le texte et les images#
+
 The popularity of Hybrid and Multi cloud architectures are on the rise as organizations continue to take advantage of cloud computing. 
 
 Some of the requirements driving these new modern architectures are as follows.

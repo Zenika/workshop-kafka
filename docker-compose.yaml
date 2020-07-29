@@ -201,14 +201,14 @@ services:
     command: "bash -c 'echo Waiting for Kafka to be ready... && \
                 cub kafka-ready -b broker:29092 1 300 && \
                 echo Creating topics... && \
-                kafka-topics --bootstrap-server broker:29092 --create --topic dc --replication-factor 1 --partitions 1 && \
-                kafka-topics --bootstrap-server broker:29092 --create --topic dc_customers --replication-factor 1 --partitions 1 && \
-                kafka-topics --bootstrap-server broker:29092 --create --topic dc_products --replication-factor 1 --partitions 1 && \
-                kafka-topics --bootstrap-server broker:29092 --create --topic dc_purchase_orders --replication-factor 1 --partitions 1 && \
-                kafka-topics --bootstrap-server broker:29092 --create --topic dc_purchase_order_details --replication-factor 1 --partitions 1 && \
-                kafka-topics --bootstrap-server broker:29092 --create --topic dc_sales_orders --replication-factor 1 --partitions 1 && \
-                kafka-topics --bootstrap-server broker:29092 --create --topic dc_sales_order_details --replication-factor 1 --partitions 1 && \
-                kafka-topics --bootstrap-server broker:29092 --create --topic dc_suppliers --replication-factor 1 --partitions 1'"
+                kafka-topics --bootstrap-server broker:29092 --create --topic dc                        --replication-factor 1 --partitions 3 && \
+                kafka-topics --bootstrap-server broker:29092 --create --topic dc_customers              --replication-factor 1 --partitions 3 && \
+                kafka-topics --bootstrap-server broker:29092 --create --topic dc_products               --replication-factor 1 --partitions 3 && \
+                kafka-topics --bootstrap-server broker:29092 --create --topic dc_purchase_orders        --replication-factor 1 --partitions 3 && \
+                kafka-topics --bootstrap-server broker:29092 --create --topic dc_purchase_order_details --replication-factor 1 --partitions 3 && \
+                kafka-topics --bootstrap-server broker:29092 --create --topic dc_sales_orders           --replication-factor 1 --partitions 3 && \
+                kafka-topics --bootstrap-server broker:29092 --create --topic dc_sales_order_details    --replication-factor 1 --partitions 3 && \
+                kafka-topics --bootstrap-server broker:29092 --create --topic dc_suppliers              --replication-factor 1 --partitions 3'"
 
   mysql:
     # *-----------------------------*

@@ -1,4 +1,4 @@
-= Hybrid-Cloud Streaming Workshop
+= Streaming Workshop with Kafka
 :doctype: book
 :toc:
 :toc-title: Table of Contents
