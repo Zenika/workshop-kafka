@@ -91,6 +91,7 @@ services:
         apt-get clean && rm -rf /tmp/* /var/lib/apt/lists/*
         confluent-hub install --no-prompt debezium/debezium-connector-mysql:0.10.0
         confluent-hub install --no-prompt confluentinc/kafka-connect-jdbc:latest
+        confluent-hub install --no-prompt confluentinc/kafka-connect-elasticsearch:5.5.1
         cd /usr/share/confluent-hub-components/confluentinc-kafka-connect-jdbc/lib
         curl -k -SL "http://dev.mysql.com/get/Downloads/Connector-J/mysql-connector-java-5.1.37.tar.gz" | tar -xzf -
         #
@@ -220,3 +221,20 @@ services:
     command: tail -f /dev/null
     build:
       context: ./db_transaction_simulator
+
+#  elasticsearch:
+#    image: elasticsearch:7.8.1
+#    container_name: elasticsearch
+#    ports:
+#      - 9200:9200
+#    environment:
+#      - discovery.type=single-node
+#      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+#
+#  kibana:
+#    image: kibana:7.8.1
+#    container_name: kibana
+#    ports:
+#      - 5601:5601
+#    environment:
+#      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
