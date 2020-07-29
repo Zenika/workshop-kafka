@@ -1,5 +1,11 @@
 #!/bin/bash
 
+git clone https://github.com/Zenika/workshop-kafka.git /home/ubuntu/workshop-kafka
+
+cat >> /home/ubuntu/.bashrc <<'EOF'
+cd /home/ubuntu/workshop-kafka
+EOF
+
 sudo apt-get remove docker docker-engine docker.io containerd runc
 sudo apt-get update
 sudo apt-get install -y \
@@ -26,8 +32,6 @@ sudo chmod +x /usr/local/bin/docker-compose
 sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
 
 sudo apt-get install -y asciidoctor jq
-
-git clone https://github.com/Zenika/workshop-kafka.git /home/ubuntu/workshop-kafka
 
 cd /home/ubuntu/workshop-kafka
 
