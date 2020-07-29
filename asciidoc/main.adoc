@@ -203,7 +203,7 @@ Confirm that the simulator is working as expected
 
 [source]
 ----
-docker logs -f db-trans-simulator
+docker-compose logs -f db-trans-simulator
 ----
 
 You should see an output like this:
@@ -1010,8 +1010,8 @@ Let's have a go at this now by creating a new stream called `product_supply_and_
 ----
 *SET* 'auto.offset.reset'='earliest';
 *CREATE STREAM* product_supply_and_demand *WITH* (PARTITIONS=1, KAFKA_TOPIC='dc_product_supply_and_demand') *AS SELECT*
-  product_id, 
-  product_qty * -1 "QUANTITY" 
+    product_id,
+    product_qty * -1 "QUANTITY"
 *FROM* sales_enriched;
 ----
 ====
@@ -1023,9 +1023,9 @@ Let's have a quick look at the first few rows of this stream
 [source,subs="quotes,attributes"]
 ----
 *SET* 'auto.offset.reset'='earliest';
-*SELECT*  product_id, 
-        quantity 
-*FROM*    product_supply_and_demand 
+*SELECT* product_id,
+    quantity
+*FROM* product_supply_and_demand
 *EMIT CHANGES* 
 *LIMIT* 10;
 ----
@@ -1073,11 +1073,11 @@ We can see the demand for a single product by filtering on the `product_id` and 
 [source,subs="quotes,attributes"]
 ----
 *SET* 'auto.offset.reset'='earliest';
-*SELECT*  product_id, 
-        quantity 
-*FROM*    product_supply_and_demand 
+*SELECT* product_id,
+    quantity
+*FROM* product_supply_and_demand
 *WHERE* product_id = 15
-*AND*   quantity < 0
+*AND* quantity < 0
 *EMIT CHANGES*;
 ----
 
@@ -1107,11 +1107,11 @@ We can also see the supply for a single product by filtering on the `product_id`
 [source,subs="quotes,attributes"]
 ----
 *SET* 'auto.offset.reset'='earliest';
-*SELECT*  product_id, 
-        quantity 
-*FROM*    product_supply_and_demand 
+*SELECT* product_id,
+    quantity
+*FROM* product_supply_and_demand
 *WHERE* product_id = 15
-*AND*   quantity > 0
+*AND* quantity > 0
 *EMIT CHANGES*;
 ----
 
@@ -1133,8 +1133,8 @@ We're now in a position where we can calculate the current stock level for each 
 ----
 *SET* 'auto.offset.reset'='earliest';
 *CREATE TABLE* current_stock *WITH* (PARTITIONS = 1, KAFKA_TOPIC = 'dc_current_stock') *AS SELECT*
-      product_id
-    , SUM(quantity) "STOCK_LEVEL" 
+    product_id,
+    SUM(quantity) "STOCK_LEVEL"
 *FROM* product_supply_and_demand
 *GROUP BY* product_id;
 ----
@@ -1147,9 +1147,9 @@ When we query this table with a Push query...
 [source,subs="quotes,attributes"]
 ----
 *SET* 'auto.offset.reset'='latest';
-*SELECT*  product_id,
-        stock_level
-*FROM*  current_stock
+*SELECT* product_id,
+    stock_level
+*FROM* current_stock
 *EMIT CHANGES*;
 ----
 
@@ -1274,11 +1274,11 @@ If we query this table for a single product...
 [source,subs="quotes,attributes"]
 ----
 *SET* 'auto.offset.reset'='latest';
-*SELECT*  window_start_time,
-        window_end_time,
-        product_id,
-        demand_last_3mins
-*FROM*  product_demand_last_3mins_tbl
+*SELECT* window_start_time,
+    window_end_time,
+    product_id,
+    demand_last_3mins
+*FROM* product_demand_last_3mins_tbl
 *WHERE* product_id = 15
 *EMIT CHANGES*;
 ----
@@ -1365,11 +1365,11 @@ When we query the `out_of_stock_events` stream...
 ----
 *SET* 'auto.offset.reset' = 'latest';
 *SELECT* product_id,
-       window_start_time,
-       window_end_time,
-       stock_level,
-       demand_last_3mins,
-       quantity_to_purchase 
+    window_start_time,
+    window_end_time,
+    stock_level,
+    demand_last_3mins,
+    quantity_to_purchase
 *FROM* out_of_stock_events
 *EMIT CHANGES*;
 ----
@@ -1431,9 +1431,9 @@ Execute the following query in the 1st session...
 [source,subs="quotes,attributes"]
 ----
 SET 'auto.offset.reset'='latest';
-SELECT  product_id,
-        stock_level
-FROM  current_stock
+SELECT product_id,
+    stock_level
+FROM current_stock
 EMIT CHANGES;
 ----
 
@@ -1442,9 +1442,9 @@ EMIT CHANGES;
 [source,subs="quotes,attributes"]
 ----
 SET 'auto.offset.reset'='latest';
-SELECT  product_id,
-        product_qty
-FROM  purchases_enriched
+SELECT product_id,
+    product_qty
+FROM purchases_enriched
 EMIT CHANGES;
 ----
 

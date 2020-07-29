@@ -81,9 +81,6 @@ services:
       CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: "1"
       CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: "1"
       CONNECT_PLUGIN_PATH: "/usr/share/java,/usr/share/confluent-hub-components/"
-      CONNECT_PRODUCER_INTERCEPTOR_CLASSES: "io.confluent.monitoring.clients.interceptor.MonitoringProducerInterceptor"
-      CONNECT_CONSUMER_INTERCEPTOR_CLASSES: "io.confluent.monitoring.clients.interceptor.MonitoringConsumerInterceptor"
-      CLASSPATH: /usr/share/java/monitoring-interceptors/monitoring-interceptors-5.5.0.jar
       CONNECT_CONFIG_PROVIDERS: "file"
       CONNECT_CONFIG_PROVIDERS_FILE_CLASS: "org.apache.kafka.common.config.provider.FileConfigProvider"
     command:
@@ -149,23 +146,7 @@ services:
       KSQL_BOOTSTRAP_SERVERS: "broker:29092"
       KSQL_KSQL_CONNECT_URL: http://kafka-connect:8083
       KSQL_KSQL_STREAMS_AUTO_OFFSET_RESET: "earliest"
-      # Producer/Consumer Confluent Monitoring Interceptors for Control Center streams monitoring
-      CLASSPATH: /usr/share/java/monitoring-interceptors/monitoring-interceptors-5.5.0.jar
-      KSQL_PRODUCER_INTERCEPTOR_CLASSES: "io.confluent.monitoring.clients.interceptor.MonitoringProducerInterceptor"
-      KSQL_CONSUMER_INTERCEPTOR_CLASSES: "io.confluent.monitoring.clients.interceptor.MonitoringConsumerInterceptor"
       KSQL_CONFLUENT_MONITORING_INTERCEPTOR_BOOTSTRAP_SERVERS: "broker:29092"
-#      KSQL_KSQL_QUERIES_FILE: /ksql-server/queries.sql
-    command:
-      - bash
-      - -c
-      - |
-        mkdir /usr/share/java/monitoring-interceptors
-        cd /usr/share/java/monitoring-interceptors
-        curl -k -L https://packages.confluent.io/maven/io/confluent/monitoring-interceptors/5.5.0/monitoring-interceptors-5.5.0.jar -o monitoring-interceptors-5.5.0.jar
-        echo "Launching ksqlDB server"
-        /usr/bin/docker/run &
-        #
-        sleep infinity
 
   ksqldb-cli:
     # *-----------------------------*
@@ -231,7 +212,7 @@ services:
       timeout: 20s
       retries: 30
 
-  dbtrans-simulator:
+  db-trans-simulator:
     container_name: db-trans-simulator
     depends_on:
       mysql:
