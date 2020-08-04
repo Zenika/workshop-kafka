@@ -1,14 +1,31 @@
 # Workshop Kafka
 
-Generation de la documentation pour l'image nginx sur votre machine
+Script Strigo
 ```
-asciidoctor asciidoc/workshop.adoc -o asciidoc/index.html -a stylesheet=stylesheet.css
-sed -i -e '/<title>/r asciidoc/clipboard.html' asciidoc/index.html
+#!/bin/bash
+
+export ccloud_cluster_endpoint=???
+export ccloud_api_key=???
+export ccloud_api_secret=???
+
+git clone https://github.com/Zenika/workshop-kafka.git -b cloud_hybrid /home/ubuntu/workshop-kafka
+
+cd /home/ubuntu/workshop-kafka
+
+chmod +x ./script/pre_install.sh ./script/init.sh
+./script/pre_install.sh
+./script/init.sh
+docker-compose up -d --build
+```
+
+Generation des fichiers nécessaires
+```
+./script/init.sh
 ```
 
 Démarrage de l'infrastructure docker
 ```
-docker-compose up -d
+docker-compose up -d --build
 
 Pour arrêter tout => docker-compose down -v
 ```
@@ -30,7 +47,7 @@ curl -i -X POST -H "Accept:application/json" \
         "config": {
              "connector.class": "io.confluent.connect.elasticsearch.ElasticsearchSinkConnector",
              "tasks.max": "1",
-             "topics": "dc_out_of_stock_events",
+             "topics": "dc01_out_of_stock_events",
              "connection.url": "http://elasticsearch:9200",
              "type.name": "kafka-connect",
              "key.converter": "org.apache.kafka.connect.storage.StringConverter",

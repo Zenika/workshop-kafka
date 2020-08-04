@@ -1,2 +1,8 @@
 *.iml
 asciidoc/index.html
+
+.env
+mount/db_transaction_simulator/simulate_dbtrans.py
+mount/ccloud.properties
+mount/mysql_schema.sql
+mount/c3/login

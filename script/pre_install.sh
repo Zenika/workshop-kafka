@@ -1,7 +1,5 @@
 #!/bin/bash
 
-git clone https://github.com/Zenika/workshop-kafka.git /home/ubuntu/workshop-kafka
-
 cat >> /home/ubuntu/.bashrc <<'EOF'
 cd /home/ubuntu/workshop-kafka
 EOF
@@ -31,11 +29,4 @@ sudo curl -L "https://github.com/docker/compose/releases/download/1.26.2/docker-
 sudo chmod +x /usr/local/bin/docker-compose
 sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
 
-sudo apt-get install -y asciidoctor jq
-
-cd /home/ubuntu/workshop-kafka
-
-asciidoctor asciidoc/workshop.adoc -o asciidoc/index.html -a stylesheet=stylesheet.css
-sed -i -e '/<title>/r asciidoc/clipboard.html' asciidoc/index.html
-
-docker-compose up -d
+sudo apt-get install -y asciidoctor jq python-minimal
